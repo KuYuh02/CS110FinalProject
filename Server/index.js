@@ -1,302 +1,227 @@
-import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { register, login, authenticateToken } from './auth.js';
-import { readPhotos, writePhotos, readUsers, writeUsers } from './utils.js';
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-// Get directory name in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { register, login, authenticateToken } from "./auth.js";
+import User from "./models/User.js";
+import Photo from "./models/Photo.js";
 
+dotenv.config();
+
+// ----------------- MONGODB ----------------- //
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Atlas connected"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
+
+// ----------------- EXPRESS ----------------- //
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Add logging middleware
+// Logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Authentication routes
-app.post('/api/register', register);
-app.post('/api/login', login);
+// ----------------- AUTH ROUTES ----------------- //
+app.post("/api/register", register);
+app.post("/api/login", login);
 
-// Photo routes
-app.get('/api/photos', async (req, res) => {
+// ----------------- PHOTO ROUTES ----------------- //
+// Get all photos
+app.get("/api/photos", async (req, res) => {
   try {
-    const photos = await readPhotos();
+    const photos = await Photo.find().populate("uploadedBy", "username");
     res.json(photos);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.post('/api/photos', authenticateToken, async (req, res) => {
+// Upload a photo
+app.post("/api/photos", authenticateToken, async (req, res) => {
   try {
     const { title, description, image, tags } = req.body;
-    const photos = await readPhotos();
-    
-    const newPhoto = {
-      id: Date.now().toString(),
+    const newPhoto = await Photo.create({
       title,
       description,
-      image, // Base64 encoded image
-      tags: Array.isArray(tags) ? tags : tags.split(',').map(tag => tag.trim()),
-      userId: req.user.id,
-      username: req.user.username,
-      likes: [],
-      comments: [],
-      createdAt: new Date().toISOString()
-    };
-    
-    photos.push(newPhoto);
-    await writePhotos(photos);
-    
-    res.status(201).json(newPhoto);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Edit photo (owner only)
-app.put('/api/photos/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, description, image, tags } = req.body;
-    const photos = await readPhotos();
-    const photoIndex = photos.findIndex(photo => photo.id === id);
-
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
-    }
-
-    if (photos[photoIndex].userId !== req.user.id) {
-      return res.status(403).json({ error: 'Not authorized to edit this photo' });
-    }
-
-    if (typeof title === 'string') photos[photoIndex].title = title;
-    if (typeof description === 'string') photos[photoIndex].description = description;
-    if (typeof image === 'string' && image.length > 0) photos[photoIndex].image = image;
-    if (typeof tags !== 'undefined') {
-      photos[photoIndex].tags = Array.isArray(tags) ? tags : String(tags).split(',').map(tag => tag.trim());
-    }
-
-    await writePhotos(photos);
-    res.json(photos[photoIndex]);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const photos = await readPhotos();
-    const photoIndex = photos.findIndex(photo => photo.id === id);
-    
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
-    }
-    
-    const likeIndex = photos[photoIndex].likes.indexOf(req.user.id);
-    if (likeIndex === -1) {
-      photos[photoIndex].likes.push(req.user.id);
-    } else {
-      photos[photoIndex].likes.splice(likeIndex, 1);
-    }
-    
-    await writePhotos(photos);
-    res.json(photos[photoIndex]);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { text } = req.body;
-    const photos = await readPhotos();
-    const photoIndex = photos.findIndex(photo => photo.id === id);
-    
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
-    }
-    
-    photos[photoIndex].comments.push({
-      userId: req.user.id,
-      username: req.user.username,
-      text,
-      createdAt: new Date().toISOString()
+      image,
+      tags: Array.isArray(tags) ? tags : String(tags || "").split(",").map(t => t.trim()),
+      uploadedBy: req.user.id
     });
-    
-    await writePhotos(photos);
-    res.json(photos[photoIndex]);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(201).json(newPhoto);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.delete('/api/photos/:id', authenticateToken, async (req, res) => {
+// Edit a photo
+app.put("/api/photos/:id", authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const photos = await readPhotos();
-    const photoIndex = photos.findIndex(photo => photo.id === id);
-    
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
+    const photo = await Photo.findById(req.params.id);
+    if (!photo) return res.status(404).json({ error: "Photo not found" });
+    if (photo.uploadedBy.toString() !== req.user.id) return res.status(403).json({ error: "Not authorized" });
+
+    Object.assign(photo, req.body);
+    await photo.save();
+    res.json(photo);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Like/unlike a photo
+app.post("/api/photos/:id/like", authenticateToken, async (req, res) => {
+  try {
+    const photo = await Photo.findById(req.params.id);
+    if (!photo) return res.status(404).json({ error: "Photo not found" });
+
+    const index = photo.likes.indexOf(req.user.id);
+    if (index === -1) {
+      photo.likes.push(req.user.id);
+    } else {
+      photo.likes.splice(index, 1);
     }
-    
-    if (photos[photoIndex].userId !== req.user.id) {
-      return res.status(403).json({ error: 'Not authorized to delete this photo' });
-    }
-    
-    photos.splice(photoIndex, 1);
-    await writePhotos(photos);
-    res.json({ message: 'Photo deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+
+    await photo.save();
+    res.json(photo);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// User routes
-// Public: get user profile by id (no password)
-app.get('/api/users/:id', async (req, res) => {
+// Comment on a photo
+app.post("/api/photos/:id/comment", authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const users = await readUsers();
-    const user = users.find(user => user.id === id);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    // Don't return password
-    const { password, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const { text } = req.body;
+    const photo = await Photo.findById(req.params.id);
+    if (!photo) return res.status(404).json({ error: "Photo not found" });
+
+    photo.comments.push({
+      userId: req.user.id,
+      username: req.user.username,
+      text
+    });
+    await photo.save();
+    res.json(photo);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Public: get all photos for a given user id
-app.get('/api/users/:id/photos', async (req, res) => {
+// Delete a photo
+app.delete("/api/photos/:id", authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const photos = await readPhotos();
-    const userPhotos = photos.filter(p => p.userId === id);
-    res.json(userPhotos);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const photo = await Photo.findById(req.params.id);
+    if (!photo) return res.status(404).json({ error: "Photo not found" });
+    if (photo.uploadedBy.toString() !== req.user.id) return res.status(403).json({ error: "Not authorized" });
+
+    await photo.deleteOne();
+    res.json({ message: "Photo deleted" });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.put('/api/users/:id', authenticateToken, async (req, res) => {
+// ----------------- USER ROUTES ----------------- //
+// Get user profile
+app.get("/api/users/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get all photos by user
+app.get("/api/users/:id/photos", async (req, res) => {
+  try {
+    const photos = await Photo.find({ uploadedBy: req.params.id });
+    res.json(photos);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update user profile
+app.put("/api/users/:id", authenticateToken, async (req, res) => {
+  try {
+    if (req.user.id !== req.params.id) return res.status(403).json({ error: "Not authorized" });
+
     const { username, bio, profilePicture } = req.body;
-    
-    if (req.user.id !== id) {
-      return res.status(403).json({ error: 'Not authorized to update this profile' });
-    }
-    
-    const users = await readUsers();
-    const userIndex = users.findIndex(user => user.id === id);
-    
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    users[userIndex].username = username || users[userIndex].username;
-    users[userIndex].bio = bio || users[userIndex].bio;
-    users[userIndex].profilePicture = profilePicture || users[userIndex].profilePicture;
-    
-    await writeUsers(users);
-    
-    // Don't return password
-    const { password, ...updatedUser } = users[userIndex];
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { username, bio, profilePicture },
+      { new: true }
+    ).select("-password");
+
     res.json(updatedUser);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Follow/unfollow a user
-app.post('/api/users/:id/follow', authenticateToken, async (req, res) => {
+app.post("/api/users/:id/follow", authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params; // user to follow/unfollow
-    if (id === req.user.id) {
-      return res.status(400).json({ error: 'Cannot follow yourself' });
-    }
+    const targetId = req.params.id;
+    if (targetId === req.user.id) return res.status(400).json({ error: "Cannot follow yourself" });
 
-    const users = await readUsers();
-    const targetIndex = users.findIndex(u => u.id === id);
-    const actorIndex = users.findIndex(u => u.id === req.user.id);
+    const actor = await User.findById(req.user.id);
+    const target = await User.findById(targetId);
+    if (!actor || !target) return res.status(404).json({ error: "User not found" });
 
-    if (targetIndex === -1 || actorIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const actorFollowing = users[actorIndex].following || [];
-    const targetFollowers = users[targetIndex].followers || [];
-
-    const alreadyFollowing = actorFollowing.includes(id);
-    if (alreadyFollowing) {
-      // Unfollow
-      users[actorIndex].following = actorFollowing.filter(uid => uid !== id);
-      users[targetIndex].followers = targetFollowers.filter(uid => uid !== req.user.id);
+    const isFollowing = actor.following.includes(targetId);
+    if (isFollowing) {
+      actor.following.pull(targetId);
+      target.followers.pull(actor._id);
     } else {
-      users[actorIndex].following = [...actorFollowing, id];
-      users[targetIndex].followers = [...targetFollowers, req.user.id];
+      actor.following.push(targetId);
+      target.followers.push(actor._id);
     }
 
-    await writeUsers(users);
+    await actor.save();
+    await target.save();
 
-    // Return updated actor (without password)
-    const { password, ...actorWithoutPassword } = users[actorIndex];
-    res.json({ user: actorWithoutPassword, following: !alreadyFollowing });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    res.json({ user: actor, following: !isFollowing });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Search route
-app.get('/api/search', async (req, res) => {
+// ----------------- SEARCH ROUTE ----------------- //
+app.get("/api/search", async (req, res) => {
   try {
     const { q } = req.query;
-    const [photos, users] = await Promise.all([readPhotos(), readUsers()]);
-    
     if (!q) {
-      // Default: return photos and empty users list
+      const photos = await Photo.find().limit(20);
       return res.json({ photos, users: [] });
     }
-    
-    const searchTerm = q.toLowerCase();
-    const filteredPhotos = photos.filter(photo => 
-      photo.title.toLowerCase().includes(searchTerm) ||
-      photo.description.toLowerCase().includes(searchTerm) ||
-      photo.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
-      photo.username.toLowerCase().includes(searchTerm)
-    );
-    const filteredUsers = users
-      .map(({ password, ...u }) => u)
-      .filter(u =>
-        (u.username || '').toLowerCase().includes(searchTerm) ||
-        (u.bio || '').toLowerCase().includes(searchTerm)
-      );
-    
-    res.json({ photos: filteredPhotos, users: filteredUsers });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+
+    const regex = new RegExp(q, "i");
+    const [photos, users] = await Promise.all([
+      Photo.find({
+        $or: [{ title: regex }, { description: regex }, { tags: regex }]
+      }),
+      User.find({
+        $or: [{ username: regex }, { bio: regex }]
+      }).select("-password")
+    ]);
+
+    res.json({ photos, users });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// ----------------- START SERVER ----------------- //
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
