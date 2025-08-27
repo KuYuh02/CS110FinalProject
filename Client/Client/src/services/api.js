@@ -12,28 +12,43 @@ const apiRequest = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const url = `${API_BASE_URL}${endpoint}`;
+  console.log(`Making API request to: ${url}`);
+  console.log('Request options:', { ...options, headers });
+  
+  const response = await fetch(url, {
     ...options,
     headers
   });
   
+  console.log(`Response status: ${response.status}`);
+  
   if (!response.ok) {
     const error = await response.json();
+    console.error('API error response:', error);
     throw new Error(error.error || 'Something went wrong');
   }
   
-  return response.json();
+  const data = await response.json();
+  console.log('API response data:', data);
+  return data;
 };
 
 export const authAPI = {
-  register: (userData) => apiRequest('/register', {
-    method: 'POST',
-    body: JSON.stringify(userData)
-  }),
-  login: (credentials) => apiRequest('/login', {
-    method: 'POST',
-    body: JSON.stringify(credentials)
-  })
+  register: (userData) => {
+    console.log('Making registration request with data:', userData);
+    return apiRequest('/register', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  },
+  login: (credentials) => {
+    console.log('Making login request with credentials:', credentials);
+    return apiRequest('/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  }
 };
 
 export const photosAPI = {

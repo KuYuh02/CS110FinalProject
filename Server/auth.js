@@ -22,7 +22,24 @@ const verifyToken = (token) => {
 const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    
+    // Validate input
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email, and password are required' });
+    }
+    
+    if (username.length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters long' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+    
+    console.log('Registration attempt for:', { username, email });
+    
     const users = await readUsers();
+    console.log('Current users count:', users.length);
     
     if (users.find(user => user.email === email)) {
       return res.status(400).json({ error: 'User already exists' });
@@ -41,11 +58,21 @@ const register = async (req, res) => {
     };
     
     users.push(newUser);
-    await writeUsers(users);
+    console.log('Attempting to save user to file...');
+    
+    const writeSuccess = await writeUsers(users);
+    
+    if (!writeSuccess) {
+      console.error('Failed to write user data to file');
+      return res.status(500).json({ error: 'Failed to save user data' });
+    }
+    
+    console.log('User successfully saved to file');
     
     const token = generateToken(newUser);
     res.status(201).json({ token, user: { id: newUser.id, username, email } });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -10,19 +10,33 @@ const dataPath = path.join(__dirname, 'data');
 
 const readJSON = async (filename) => {
   try {
-    const data = await fs.readFile(path.join(dataPath, filename), 'utf8');
-    return JSON.parse(data);
+    const filePath = path.join(dataPath, filename);
+    console.log(`Attempting to read from: ${filePath}`);
+    const data = await fs.readFile(filePath, 'utf8');
+    const parsed = JSON.parse(data);
+    console.log(`Successfully read ${filename}, data length: ${parsed.length}`);
+    return parsed;
   } catch (error) {
+    console.log(`Error reading ${filename}:`, error.message);
     return [];
   }
 };
 
 const writeJSON = async (filename, data) => {
   try {
-    await fs.writeFile(path.join(dataPath, filename), JSON.stringify(data, null, 2));
+    // Ensure data directory exists
+    console.log(`Ensuring data directory exists: ${dataPath}`);
+    await fs.mkdir(dataPath, { recursive: true });
+    
+    const filePath = path.join(dataPath, filename);
+    console.log(`Writing to file: ${filePath}`);
+    console.log(`Data to write:`, JSON.stringify(data, null, 2));
+    
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+    console.log(`Successfully wrote to ${filePath}`);
     return true;
   } catch (error) {
-    console.error('Error writing file:', error);
+    console.error(`Error writing file ${filename}:`, error);
     return false;
   }
 };
