@@ -26,9 +26,9 @@ const Profile = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [userData, allPhotos] = await Promise.all([
+        const [userData, userPhotos] = await Promise.all([
           usersAPI.getById(id),
-          photosAPI.getAll()
+          usersAPI.getPhotos(id)
         ]);
         
         setProfileUser(userData);
@@ -38,7 +38,6 @@ const Profile = () => {
           profilePicture: userData.profilePicture || ''
         });
         
-        const userPhotos = allPhotos.filter(photo => photo.userId === id);
         setPhotos(userPhotos);
       } catch (err) {
         setError(err.message);
@@ -59,8 +58,6 @@ const Profile = () => {
       setEditing(false);
       
       if (isOwnProfile) {
-        // Update context if it's the current user
-        const { updateUser } = useAuth();
         updateUser(updatedUser);
       }
     } catch (err) {

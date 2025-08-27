@@ -81,7 +81,8 @@ export const usersAPI = {
   }),
   follow: (id) => apiRequest(`/users/${id}/follow`, {
     method: 'POST'
-  })
+  }),
+  getPhotos: (id) => apiRequest(`/users/${id}/photos`)
 };
 
 export const searchAPI = {

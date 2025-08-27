@@ -166,7 +166,8 @@ app.delete('/api/photos/:id', authenticateToken, async (req, res) => {
 });
 
 // User routes
-app.get('/api/users/:id', authenticateToken, async (req, res) => {
+// Public: get user profile by id (no password)
+app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const users = await readUsers();
@@ -179,6 +180,18 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
     // Don't return password
     const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Public: get all photos for a given user id
+app.get('/api/users/:id/photos', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const photos = await readPhotos();
+    const userPhotos = photos.filter(p => p.userId === id);
+    res.json(userPhotos);
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -257,10 +270,11 @@ app.post('/api/users/:id/follow', authenticateToken, async (req, res) => {
 app.get('/api/search', async (req, res) => {
   try {
     const { q } = req.query;
-    const photos = await readPhotos();
+    const [photos, users] = await Promise.all([readPhotos(), readUsers()]);
     
     if (!q) {
-      return res.json(photos);
+      // Default: return photos and empty users list
+      return res.json({ photos, users: [] });
     }
     
     const searchTerm = q.toLowerCase();
@@ -270,8 +284,14 @@ app.get('/api/search', async (req, res) => {
       photo.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
       photo.username.toLowerCase().includes(searchTerm)
     );
+    const filteredUsers = users
+      .map(({ password, ...u }) => u)
+      .filter(u =>
+        (u.username || '').toLowerCase().includes(searchTerm) ||
+        (u.bio || '').toLowerCase().includes(searchTerm)
+      );
     
-    res.json(filteredPhotos);
+    res.json({ photos: filteredPhotos, users: filteredUsers });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }

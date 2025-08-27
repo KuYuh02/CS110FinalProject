@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { photosAPI } from "../services/api";
 
@@ -80,6 +81,9 @@ function PhotoCard({ photo, onUpdated, onDeleted }) {
         <>
           <h3>{photo.title}</h3>
           <p>{photo.description}</p>
+          <div>
+            By: <Link to={`/profile/${photo.userId}`}>{photo.username}</Link>
+          </div>
         </>
       )}
       <p>Tags: {photo.tags.join(", ")}</p>
