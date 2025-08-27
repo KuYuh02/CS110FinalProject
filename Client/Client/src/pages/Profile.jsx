@@ -6,7 +6,7 @@ import PhotoCard from '../components/PhotoCard';
 
 const Profile = () => {
   const { id } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
   const navigate = useNavigate();
   
   const [profileUser, setProfileUser] = useState(null);
@@ -165,13 +165,32 @@ const Profile = () => {
                   {photos.length} photos • {profileUser.followers?.length || 0} followers • {profileUser.following?.length || 0} following
                 </p>
                 
-                {isOwnProfile && (
+                {isOwnProfile ? (
                   <button
                     onClick={() => setEditing(true)}
                     className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md"
                   >
                     Edit Profile
                   </button>
+                ) : (
+                  currentUser && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await usersAPI.follow(id);
+                          updateUser(res.user);
+                          // Refresh profile data to reflect follower count
+                          const refreshed = await usersAPI.getById(id);
+                          setProfileUser(refreshed);
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }}
+                      className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md"
+                    >
+                      {(currentUser?.following || []).includes(id) ? 'Unfollow' : 'Follow'}
+                    </button>
+                  )
                 )}
               </div>
             )}
@@ -186,7 +205,12 @@ const Profile = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {photos.map(photo => (
-              <PhotoCard key={photo.id} photo={photo} />
+              <PhotoCard
+                key={photo.id}
+                photo={photo}
+                onUpdated={(updated) => setPhotos((prev) => prev.map((p) => p.id === updated.id ? updated : p))}
+                onDeleted={(deletedId) => setPhotos((prev) => prev.filter((p) => p.id !== deletedId))}
+              />
             ))}
           </div>
         )}
