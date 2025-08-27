@@ -4,10 +4,21 @@
     "username": "aha",
     "email": "pastwhip@gmail.com",
     "password": "alex4305",
-    "bio": "",
+    "bio": "testing123",
     "profilePicture": "",
     "followers": [],
     "following": [],
     "createdAt": "2025-08-27T02:15:46.851Z"
+  },
+  {
+    "id": "1756262440911",
+    "username": "testing",
+    "email": "testing123@test.com",
+    "password": "testing123",
+    "bio": "",
+    "profilePicture": "",
+    "followers": [],
+    "following": [],
+    "createdAt": "2025-08-27T02:40:40.911Z"
   }
 ]
