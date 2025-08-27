@@ -57,6 +57,10 @@ export const photosAPI = {
     method: 'POST',
     body: JSON.stringify(photoData)
   }),
+  update: (id, photoData) => apiRequest(`/photos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(photoData)
+  }),
   like: (id) => apiRequest(`/photos/${id}/like`, {
     method: 'POST'
   }),
@@ -74,6 +78,9 @@ export const usersAPI = {
   update: (id, userData) => apiRequest(`/users/${id}`, {
     method: 'PUT',
     body: JSON.stringify(userData)
+  }),
+  follow: (id) => apiRequest(`/users/${id}/follow`, {
+    method: 'POST'
   })
 };
 

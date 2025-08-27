@@ -64,6 +64,36 @@ app.post('/api/photos', authenticateToken, async (req, res) => {
   }
 });
 
+// Edit photo (owner only)
+app.put('/api/photos/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, image, tags } = req.body;
+    const photos = await readPhotos();
+    const photoIndex = photos.findIndex(photo => photo.id === id);
+
+    if (photoIndex === -1) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    if (photos[photoIndex].userId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to edit this photo' });
+    }
+
+    if (typeof title === 'string') photos[photoIndex].title = title;
+    if (typeof description === 'string') photos[photoIndex].description = description;
+    if (typeof image === 'string' && image.length > 0) photos[photoIndex].image = image;
+    if (typeof tags !== 'undefined') {
+      photos[photoIndex].tags = Array.isArray(tags) ? tags : String(tags).split(',').map(tag => tag.trim());
+    }
+
+    await writePhotos(photos);
+    res.json(photos[photoIndex]);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -179,6 +209,45 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     // Don't return password
     const { password, ...updatedUser } = users[userIndex];
     res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Follow/unfollow a user
+app.post('/api/users/:id/follow', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params; // user to follow/unfollow
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'Cannot follow yourself' });
+    }
+
+    const users = await readUsers();
+    const targetIndex = users.findIndex(u => u.id === id);
+    const actorIndex = users.findIndex(u => u.id === req.user.id);
+
+    if (targetIndex === -1 || actorIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const actorFollowing = users[actorIndex].following || [];
+    const targetFollowers = users[targetIndex].followers || [];
+
+    const alreadyFollowing = actorFollowing.includes(id);
+    if (alreadyFollowing) {
+      // Unfollow
+      users[actorIndex].following = actorFollowing.filter(uid => uid !== id);
+      users[targetIndex].followers = targetFollowers.filter(uid => uid !== req.user.id);
+    } else {
+      users[actorIndex].following = [...actorFollowing, id];
+      users[targetIndex].followers = [...targetFollowers, req.user.id];
+    }
+
+    await writeUsers(users);
+
+    // Return updated actor (without password)
+    const { password, ...actorWithoutPassword } = users[actorIndex];
+    res.json({ user: actorWithoutPassword, following: !alreadyFollowing });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
