@@ -9,10 +9,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Add logging middleware
+// Logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
@@ -165,8 +165,8 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Photo routes
-app.get('/api/photos', async (req, res) => {
+// Photos
+app.get("/api/photos", async (req, res) => {
   try {
     const photos = await Photo.find().sort({ createdAt: -1 });
     res.json(photos);
@@ -176,7 +176,7 @@ app.get('/api/photos', async (req, res) => {
   }
 });
 
-app.post('/api/photos', authenticateToken, async (req, res) => {
+app.post("/api/photos", authenticateToken, async (req, res) => {
   try {
     const { title, description, image, tags } = req.body;
     
@@ -487,5 +487,5 @@ app.get('/api/search', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
