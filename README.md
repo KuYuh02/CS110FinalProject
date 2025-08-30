@@ -1,77 +1,109 @@
-# SnapShare - Photo Sharing App
+# SnapShare - Photo Sharing Social Media App
 
-## Project Structure
-- `Client/` - React frontend application
-- `Server/` - Node.js backend server
+A full-stack MERN (MongoDB, Express.js, React, Node.js) application.
 
-## Setup Instructions
+## 🛠️ Prerequisites
 
-### Backend Setup
-1. Navigate to the Server directory:
-   ```bash
-   cd Server
-   ```
+Before running this application, make sure you have the following installed:
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+- **Node.js** (v14 or higher)
+- **npm** (Node Package Manager)
+- **MongoDB** (running locally or MongoDB Atlas connection)
 
-3. Start the server:
-   ```bash
-   npm start
-   ```
-   The server will run on port 3000.
+## 📋 Setup Instructions
 
-### Frontend Setup
-1. Navigate to the Client/Client directory:
-   ```bash
-   cd Client/Client
-   ```
+### **1. Clone and Navigate to Project**
+```bash
+git clone <your-repository-url>
+cd "final project/CS110FinalProject"
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### **2. Backend Setup**
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+#### **Install Dependencies**
+```bash
+cd Server
+npm install
+```
 
-## Testing the Signup Functionality
+#### **Configure MongoDB**
+The application is configured to connect to MongoDB. You can either:
 
-1. Make sure both the backend server and frontend are running
-2. Open your browser and navigate to the signup page
-3. Fill out the signup form with:
-   - Username (at least 3 characters)
-   - Email (valid email format)
-   - Password (at least 6 characters)
-4. Submit the form
-5. Check the browser console and server console for debugging information
-6. After successful registration, you should be redirected to the home page
-7. Try logging in with the same credentials
+**Option A: Use Local MongoDB**
+- Install MongoDB locally
+- Start MongoDB service
+- The app will connect to `mongodb://localhost:27017/snapshare`
 
-## Debugging
+**Option B: Use MongoDB Atlas**
+- Create a free MongoDB Atlas account
+- Get your connection string
+- Update the connection string in `Server/index.js`
 
-The application now includes comprehensive logging to help debug any issues:
+#### **Start the Server**
+```bash
+npm start
+```
 
-- **Client-side**: Check browser console for API request/response logs
-- **Server-side**: Check server console for registration attempt logs and file operation logs
+The server will run on **port 3000** and connect to MongoDB.
 
-## Fixed Issues
+### **3. Frontend Setup**
 
-- Signup form now properly connects to the backend API
-- Added comprehensive error handling and validation
-- Added detailed logging for debugging
-- Fixed file writing issues with proper error checking
-- Added input validation (username length, password length, required fields)
+#### **Install Dependencies**
+```bash
+cd ../Client/Client
+npm install
+```
 
-## File Structure
+#### **Start Development Server**
+```bash
+npm run dev
+```
 
-- `Server/auth.js` - Authentication logic (register, login)
-- `Server/utils.js` - File I/O operations
-- `Server/index.js` - Express server setup
-- `Client/Client/src/pages/Signup.jsx` - Signup form component
-- `Client/Client/src/services/api.js` - API service functions
-- `Client/Client/src/context/AuthContext.jsx` - Authentication context
+The React app will run on **port 5173** (Vite default).
+
+## 🌐 Accessing the Application
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3000
+
+## 🔧 Development
+
+### **Running in Development Mode**
+Both frontend and backend support hot-reloading for development:
+
+```bash
+# Terminal 1 - Backend
+cd Server
+npm start
+
+# Terminal 2 - Frontend
+cd Client/Client
+npm run dev
+```
+
+## 🚨 Troubleshooting
+
+### **Common Issues**
+
+#### **MongoDB Connection Error**
+```bash
+Error: MongoDB connection error
+```
+**Solution**: Ensure MongoDB is running and accessible
+
+#### **Port Already in Use**
+```bash
+Error: EADDRINUSE: address already in use :::3000
+```
+**Solution**: Kill existing process or change port in `Server/index.js`
+
+#### **Frontend Build Errors**
+```bash
+Error: Cannot find module
+```
+**Solution**: Run `npm install` in the `Client/Client` directory
+
+#### **Authentication Issues**
+- Clear localStorage and try logging in again
+- Check server console for JWT verification errors
+- Ensure email/password match during login
