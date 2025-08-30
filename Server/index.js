@@ -212,31 +212,18 @@ app.get("/api/photos", async (req, res) => {
     const photos = await Photo.find().sort({ createdAt: -1 });
     
     // Convert ObjectIds to strings for client-side compatibility
-    const formattedPhotos = photos.map(photo => {
-      console.log('Processing photo:', photo.title);
-      console.log('Photo comments before formatting:', photo.comments);
-      
-      const formattedPhoto = {
-        ...photo.toObject(),
-        id: photo._id.toString(),
-        userId: photo.userId.toString(),
-        likes: photo.likes.map(likeId => likeId.toString()),
-        comments: photo.comments.map(comment => {
-          console.log('Processing comment:', comment);
-          return {
-            userId: comment.userId.toString(),
-            username: comment.username,
-            text: comment.text,
-            createdAt: comment.createdAt
-          };
-        })
-      };
-      
-      console.log('Formatted photo comments:', formattedPhoto.comments);
-      return formattedPhoto;
-    });
-    
-    console.log('Formatted photos for client:', formattedPhotos);
+    const formattedPhotos = photos.map(photo => ({
+      ...photo.toObject(),
+      id: photo._id.toString(),
+      userId: photo.userId.toString(),
+      likes: photo.likes.map(likeId => likeId.toString()),
+      comments: photo.comments.map(comment => ({
+        userId: comment.userId.toString(),
+        username: comment.username,
+        text: comment.text,
+        createdAt: comment.createdAt
+      }))
+    }));
     res.json(formattedPhotos);
   } catch (error) {
     console.error('Get photos error:', error);
@@ -246,9 +233,6 @@ app.get("/api/photos", async (req, res) => {
 
 app.post("/api/photos", authenticateToken, async (req, res) => {
   try {
-    console.log('Create photo request - req.user:', req.user);
-    console.log('Request body:', req.body);
-    
     const { title, description, image, tags } = req.body;
     
     if (!title || !description || !image) {
@@ -266,10 +250,7 @@ app.post("/api/photos", authenticateToken, async (req, res) => {
       comments: []
     });
 
-    console.log('Photo object before save:', photo);
-
     await photo.save();
-    console.log('Photo saved successfully:', photo);
     
     // Format the response for client-side compatibility
     const formattedPhoto = {
@@ -285,7 +266,6 @@ app.post("/api/photos", authenticateToken, async (req, res) => {
       }))
     };
     
-    console.log('Formatted photo response:', formattedPhoto);
     res.status(201).json(formattedPhoto);
   } catch (error) {
     console.error('Create photo error:', error);
@@ -296,10 +276,6 @@ app.post("/api/photos", authenticateToken, async (req, res) => {
 // Edit photo (owner only)
 app.put('/api/photos/:id', authenticateToken, async (req, res) => {
   try {
-    console.log('Update photo request - req.user:', req.user);
-    console.log('Photo ID:', req.params.id);
-    console.log('Request body:', req.body);
-    
     const { id } = req.params;
     const { title, description, image, tags } = req.body;
 
@@ -307,12 +283,6 @@ app.put('/api/photos/:id', authenticateToken, async (req, res) => {
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-
-    console.log('Photo found:', photo);
-    console.log('Photo userId:', photo.userId);
-    console.log('req.user.id:', req.user.id);
-    console.log('Photo userId type:', typeof photo.userId);
-    console.log('req.user.id type:', typeof req.user.id);
 
     if (photo.userId.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to edit this photo' });
@@ -351,9 +321,6 @@ app.put('/api/photos/:id', authenticateToken, async (req, res) => {
 
 app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
   try {
-    console.log('Like photo request - req.user:', req.user);
-    console.log('Photo ID:', req.params.id);
-    
     const { id } = req.params;
     const photo = await Photo.findById(id);
     
@@ -361,19 +328,13 @@ app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
-    console.log('Photo found:', photo);
-    console.log('Photo userId:', photo.userId);
-    console.log('req.user.id:', req.user.id);
-    
     const userIdObj = new mongoose.Types.ObjectId(req.user.id);
     const likeIndex = photo.likes.findIndex(likeId => likeId.equals(userIdObj));
     
     if (likeIndex === -1) {
       photo.likes.push(userIdObj);
-      console.log('Added like for user:', req.user.id);
     } else {
       photo.likes.splice(likeIndex, 1);
-      console.log('Removed like for user:', req.user.id);
     }
     
     await photo.save();
@@ -401,10 +362,6 @@ app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
 
 app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
   try {
-    console.log('Comment request - req.user:', req.user);
-    console.log('Photo ID:', req.params.id);
-    console.log('Comment text:', req.body.text);
-    
     const { id } = req.params;
     const { text } = req.body;
 
@@ -424,14 +381,9 @@ app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
       createdAt: new Date()
     };
     
-    console.log('New comment object:', newComment);
     photo.comments.push(newComment);
     
-    console.log('Added comment for user:', req.user.id, 'with username:', req.user.username);
-    console.log('Photo comments after adding:', photo.comments);
-    
     await photo.save();
-    console.log('Photo saved with comments:', photo.comments);
     
     // Format the response for client-side compatibility
     const formattedPhoto = {
@@ -439,18 +391,14 @@ app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
       id: photo._id.toString(),
       userId: photo.userId.toString(),
       likes: photo.likes.map(likeId => likeId.toString()),
-      comments: photo.comments.map(comment => {
-        console.log('Formatting comment in response:', comment);
-        return {
-          userId: comment.userId.toString(),
-          username: comment.username,
-          text: comment.text,
-          createdAt: comment.createdAt
-        };
-      })
+      comments: photo.comments.map(comment => ({
+        userId: comment.userId.toString(),
+        username: comment.username,
+        text: comment.text,
+        createdAt: comment.createdAt
+      }))
     };
     
-    console.log('Final formatted photo response:', formattedPhoto);
     res.json(formattedPhoto);
   } catch (error) {
     console.error('Comment error:', error);
@@ -460,19 +408,12 @@ app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
 
 app.delete('/api/photos/:id', authenticateToken, async (req, res) => {
   try {
-    console.log('Delete photo request - req.user:', req.user);
-    console.log('Photo ID:', req.params.id);
-    
     const { id } = req.params;
     const photo = await Photo.findById(id);
     
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
-    console.log('Photo found:', photo);
-    console.log('Photo userId:', photo.userId);
-    console.log('req.user.id:', req.user.id);
 
     if (photo.userId.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to delete this photo' });
@@ -630,6 +571,142 @@ app.post('/api/users/:id/follow', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Follow user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Recommendation system route
+app.get('/api/recommendations', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get current user's data
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Get user's liked photos
+    const likedPhotos = await Photo.find({
+      likes: { $in: [new mongoose.Types.ObjectId(userId)] }
+    });
+    
+    // Get user's followed users
+    const followedUsers = currentUser.following;
+    
+    // Find users who have similar preferences
+    const similarUsers = await User.aggregate([
+      {
+        $match: {
+          _id: { $ne: new mongoose.Types.ObjectId(userId) } // Exclude current user
+        }
+      },
+      {
+        $lookup: {
+          from: 'photos',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'userPhotos'
+        }
+      },
+      {
+        $lookup: {
+          from: 'photos',
+          localField: '_id',
+          foreignField: 'likes',
+          as: 'likedPhotos'
+        }
+      },
+      {
+        $addFields: {
+          // Calculate similarity score based on:
+          // 1. Common liked photos (weight: 3)
+          // 2. Common followed users (weight: 2)
+          // 3. Similar photo categories/tags (weight: 1)
+          commonLikedPhotos: {
+            $size: {
+              $setIntersection: [
+                { $map: { input: '$likedPhotos', as: 'photo', in: '$$photo._id' } },
+                { $map: { input: likedPhotos, as: 'photo', in: '$$photo._id' } }
+              ]
+            }
+          },
+          commonFollowedUsers: {
+            $size: {
+              $setIntersection: ['$following', followedUsers]
+            }
+          },
+          // Count photos with similar tags
+          similarTags: {
+            $size: {
+              $setIntersection: [
+                { $reduce: { input: '$userPhotos', initialValue: [], in: { $concatArrays: ['$$value', '$$this.tags'] } } },
+                { $reduce: { input: likedPhotos, initialValue: [], in: { $concatArrays: ['$$value', '$$this.tags'] } } }
+              ]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          similarityScore: {
+            $add: [
+              { $multiply: ['$commonLikedPhotos', 3] },
+              { $multiply: ['$commonFollowedUsers', 2] },
+              '$similarTags'
+            ]
+          }
+        }
+      },
+      {
+        $match: {
+          similarityScore: { $gt: 0 } // Only users with some similarity
+        }
+      },
+      {
+        $sort: { similarityScore: -1 } // Sort by similarity score
+      },
+      {
+        $limit: 10 // Limit to top 10 recommendations
+      },
+      {
+        $project: {
+          _id: 1,
+          username: 1,
+          bio: 1,
+          profilePicture: 1,
+          similarityScore: 1,
+          commonLikedPhotos: 1,
+          commonFollowedUsers: 1,
+          similarTags: 1,
+          photoCount: { $size: '$userPhotos' }
+        }
+      }
+    ]);
+    
+    // Format the response
+    const formattedRecommendations = similarUsers.map(user => ({
+      id: user._id.toString(),
+      username: user.username,
+      bio: user.bio,
+      profilePicture: user.profilePicture,
+      similarityScore: user.similarityScore,
+      commonLikedPhotos: user.commonLikedPhotos,
+      commonFollowedUsers: user.commonFollowedUsers,
+      similarTags: user.similarTags,
+      photoCount: user.photoCount
+    }));
+    
+    res.json({
+      recommendations: formattedRecommendations,
+      userStats: {
+        totalLikedPhotos: likedPhotos.length,
+        totalFollowedUsers: followedUsers.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('Recommendation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -29,6 +29,9 @@ const Navbar = () => {
                 <Link to="/upload" className="text-gray-700 hover:text-indigo-600">
                   Upload
                 </Link>
+                <Link to="/recommendations" className="text-gray-700 hover:text-indigo-600">
+                  💡 Recommendations
+                </Link>
                 <Link to={`/profile/${user.id}`} className="text-gray-700 hover:text-indigo-600">
                   Profile
                 </Link>

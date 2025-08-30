@@ -7,6 +7,7 @@ import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import UploadForm from './components/UploadForm';
 import SearchResults from './pages/SearchResults';
+import Recommendations from './components/Recommendations';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Route path="/profile/:id" element={<Profile />} />
               <Route path="/upload" element={<UploadForm />} />
               <Route path="/search" element={<SearchResults />} />
+              <Route path="/recommendations" element={<Recommendations />} />
             </Routes>
           </main>
         </div>

@@ -88,3 +88,7 @@ export const usersAPI = {
 export const searchAPI = {
   search: (query) => apiRequest(`/search?q=${encodeURIComponent(query)}`)
 };
+
+export const recommendationsAPI = {
+  getRecommendations: () => apiRequest('/recommendations')
+};
