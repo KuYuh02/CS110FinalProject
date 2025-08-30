@@ -307,6 +307,10 @@ a:hover {
   padding-right: 1rem;
 }
 
+.space-x-8 > * + * {
+  margin-left: 2rem; /* 32px */
+}
+
 .card {
   background-color: #ffffff;
   border-radius: 0.5rem;
