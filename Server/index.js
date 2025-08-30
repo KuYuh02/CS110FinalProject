@@ -24,9 +24,35 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+// Handle existing users without email field
+mongoose.connection.once('open', async () => {
+  try {
+    const User = mongoose.model('User');
+    const usersWithoutEmail = await User.find({ email: { $exists: false } });
+    
+    if (usersWithoutEmail.length > 0) {
+      console.log(`Found ${usersWithoutEmail.length} users without email field, updating...`);
+      
+      for (const user of usersWithoutEmail) {
+        // Generate a default email if none exists
+        const defaultEmail = `${user.username}@example.com`;
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { email: defaultEmail } }
+        );
+      }
+      
+      console.log('Updated existing users with default email');
+    }
+  } catch (error) {
+    console.error('Error updating existing users:', error);
+  }
+});
+
 // User Schema
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   bio: { type: String, default: '' },
   profilePicture: { type: String, default: '' },
@@ -78,20 +104,26 @@ const authenticateToken = (req, res, next) => {
 // Authentication routes
 app.post('/api/register', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email and password are required' });
     }
 
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
       return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ error: 'Email already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({
       username,
+      email,
       password: hashedPassword,
       bio: '',
       profilePicture: '',
@@ -112,6 +144,7 @@ app.post('/api/register', async (req, res) => {
       user: {
         id: user._id.toString(),
         username: user.username,
+        email: user.email,
         bio: user.bio,
         profilePicture: user.profilePicture,
         following: user.following,
@@ -126,13 +159,13 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -153,6 +186,7 @@ app.post('/api/login', async (req, res) => {
       user: {
         id: user._id.toString(),
         username: user.username,
+        email: user.email,
         bio: user.bio,
         profilePicture: user.profilePicture,
         following: user.following,
@@ -324,6 +358,7 @@ app.get('/api/users/:id', async (req, res) => {
     res.json({
       id: user._id.toString(),
       username: user.username,
+      email: user.email,
       bio: user.bio,
       profilePicture: user.profilePicture,
       following: user.following,
@@ -352,7 +387,7 @@ app.get('/api/users/:id/photos', async (req, res) => {
 app.put('/api/users/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, bio, profilePicture } = req.body;
+    const { username, email, bio, profilePicture } = req.body;
     
     if (req.user.id !== id) {
       return res.status(403).json({ error: 'Not authorized to update this profile' });
@@ -360,6 +395,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     
     const updates = {};
     if (username) updates.username = username;
+    if (email) updates.email = email;
     if (bio !== undefined) updates.bio = bio;
     if (profilePicture !== undefined) updates.profilePicture = profilePicture;
     
@@ -372,6 +408,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     res.json({
       id: user._id.toString(),
       username: user.username,
+      email: user.email,
       bio: user.bio,
       profilePicture: user.profilePicture,
       following: user.following,
@@ -382,7 +419,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update user error:', error);
     if (error.code === 11000) {
-      return res.status(400).json({ error: 'Username already exists' });
+      return res.status(400).json({ error: 'Username or email already exists' });
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -426,6 +463,7 @@ app.post('/api/users/:id/follow', authenticateToken, async (req, res) => {
       user: {
         id: actorUser._id.toString(),
         username: actorUser.username,
+        email: actorUser.email,
         bio: actorUser.bio,
         profilePicture: actorUser.profilePicture,
         following: actorUser.following,
@@ -473,6 +511,7 @@ app.get('/api/search', async (req, res) => {
     const formattedUsers = users.map(user => ({
       id: user._id.toString(),
       username: user.username,
+      email: user.email,
       bio: user.bio,
       profilePicture: user.profilePicture,
       following: user.following,
