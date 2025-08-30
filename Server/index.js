@@ -92,11 +92,18 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) {
+      console.error('JWT verification error:', err);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
-    req.user = user;
+    
+    // Ensure req.user has the correct structure
+    req.user = {
+      id: decoded.id,
+      username: decoded.username
+    };
+    
     next();
   });
 };
@@ -203,7 +210,34 @@ app.post('/api/login', async (req, res) => {
 app.get("/api/photos", async (req, res) => {
   try {
     const photos = await Photo.find().sort({ createdAt: -1 });
-    res.json(photos);
+    
+    // Convert ObjectIds to strings for client-side compatibility
+    const formattedPhotos = photos.map(photo => {
+      console.log('Processing photo:', photo.title);
+      console.log('Photo comments before formatting:', photo.comments);
+      
+      const formattedPhoto = {
+        ...photo.toObject(),
+        id: photo._id.toString(),
+        userId: photo.userId.toString(),
+        likes: photo.likes.map(likeId => likeId.toString()),
+        comments: photo.comments.map(comment => {
+          console.log('Processing comment:', comment);
+          return {
+            userId: comment.userId.toString(),
+            username: comment.username,
+            text: comment.text,
+            createdAt: comment.createdAt
+          };
+        })
+      };
+      
+      console.log('Formatted photo comments:', formattedPhoto.comments);
+      return formattedPhoto;
+    });
+    
+    console.log('Formatted photos for client:', formattedPhotos);
+    res.json(formattedPhotos);
   } catch (error) {
     console.error('Get photos error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -212,6 +246,9 @@ app.get("/api/photos", async (req, res) => {
 
 app.post("/api/photos", authenticateToken, async (req, res) => {
   try {
+    console.log('Create photo request - req.user:', req.user);
+    console.log('Request body:', req.body);
+    
     const { title, description, image, tags } = req.body;
     
     if (!title || !description || !image) {
@@ -223,14 +260,33 @@ app.post("/api/photos", authenticateToken, async (req, res) => {
       description,
       image,
       tags: Array.isArray(tags) ? tags : (tags || '').split(',').map(tag => tag.trim()).filter(Boolean),
-      userId: req.user.id,
+      userId: new mongoose.Types.ObjectId(req.user.id),
       username: req.user.username,
       likes: [],
       comments: []
     });
 
+    console.log('Photo object before save:', photo);
+
     await photo.save();
-    res.status(201).json(photo);
+    console.log('Photo saved successfully:', photo);
+    
+    // Format the response for client-side compatibility
+    const formattedPhoto = {
+      ...photo.toObject(),
+      id: photo._id.toString(),
+      userId: photo.userId.toString(),
+      likes: photo.likes.map(likeId => likeId.toString()),
+      comments: photo.comments.map(comment => ({
+        userId: comment.userId.toString(),
+        username: comment.username,
+        text: comment.text,
+        createdAt: comment.createdAt
+      }))
+    };
+    
+    console.log('Formatted photo response:', formattedPhoto);
+    res.status(201).json(formattedPhoto);
   } catch (error) {
     console.error('Create photo error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -240,6 +296,10 @@ app.post("/api/photos", authenticateToken, async (req, res) => {
 // Edit photo (owner only)
 app.put('/api/photos/:id', authenticateToken, async (req, res) => {
   try {
+    console.log('Update photo request - req.user:', req.user);
+    console.log('Photo ID:', req.params.id);
+    console.log('Request body:', req.body);
+    
     const { id } = req.params;
     const { title, description, image, tags } = req.body;
 
@@ -247,6 +307,12 @@ app.put('/api/photos/:id', authenticateToken, async (req, res) => {
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
+
+    console.log('Photo found:', photo);
+    console.log('Photo userId:', photo.userId);
+    console.log('req.user.id:', req.user.id);
+    console.log('Photo userId type:', typeof photo.userId);
+    console.log('req.user.id type:', typeof req.user.id);
 
     if (photo.userId.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to edit this photo' });
@@ -261,7 +327,22 @@ app.put('/api/photos/:id', authenticateToken, async (req, res) => {
     }
 
     const updatedPhoto = await Photo.findByIdAndUpdate(id, updates, { new: true });
-    res.json(updatedPhoto);
+    
+    // Format the response for client-side compatibility
+    const formattedPhoto = {
+      ...updatedPhoto.toObject(),
+      id: updatedPhoto._id.toString(),
+      userId: updatedPhoto.userId.toString(),
+      likes: updatedPhoto.likes.map(likeId => likeId.toString()),
+      comments: updatedPhoto.comments.map(comment => ({
+        userId: comment.userId.toString(),
+        username: comment.username,
+        text: comment.text,
+        createdAt: comment.createdAt
+      }))
+    };
+    
+    res.json(formattedPhoto);
   } catch (error) {
     console.error('Update photo error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -270,6 +351,9 @@ app.put('/api/photos/:id', authenticateToken, async (req, res) => {
 
 app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
   try {
+    console.log('Like photo request - req.user:', req.user);
+    console.log('Photo ID:', req.params.id);
+    
     const { id } = req.params;
     const photo = await Photo.findById(id);
     
@@ -277,17 +361,38 @@ app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
+    console.log('Photo found:', photo);
+    console.log('Photo userId:', photo.userId);
+    console.log('req.user.id:', req.user.id);
+    
     const userIdObj = new mongoose.Types.ObjectId(req.user.id);
     const likeIndex = photo.likes.findIndex(likeId => likeId.equals(userIdObj));
     
     if (likeIndex === -1) {
       photo.likes.push(userIdObj);
+      console.log('Added like for user:', req.user.id);
     } else {
       photo.likes.splice(likeIndex, 1);
+      console.log('Removed like for user:', req.user.id);
     }
     
     await photo.save();
-    res.json(photo);
+    
+    // Format the response for client-side compatibility
+    const formattedPhoto = {
+      ...photo.toObject(),
+      id: photo._id.toString(),
+      userId: photo.userId.toString(),
+      likes: photo.likes.map(likeId => likeId.toString()),
+      comments: photo.comments.map(comment => ({
+        userId: comment.userId.toString(),
+        username: comment.username,
+        text: comment.text,
+        createdAt: comment.createdAt
+      }))
+    };
+    
+    res.json(formattedPhoto);
   } catch (error) {
     console.error('Like photo error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -296,6 +401,10 @@ app.post('/api/photos/:id/like', authenticateToken, async (req, res) => {
 
 app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
   try {
+    console.log('Comment request - req.user:', req.user);
+    console.log('Photo ID:', req.params.id);
+    console.log('Comment text:', req.body.text);
+    
     const { id } = req.params;
     const { text } = req.body;
 
@@ -308,15 +417,41 @@ app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
-    photo.comments.push({
-      userId: req.user.id,
+    const newComment = {
+      userId: new mongoose.Types.ObjectId(req.user.id),
       username: req.user.username,
       text,
       createdAt: new Date()
-    });
+    };
+    
+    console.log('New comment object:', newComment);
+    photo.comments.push(newComment);
+    
+    console.log('Added comment for user:', req.user.id, 'with username:', req.user.username);
+    console.log('Photo comments after adding:', photo.comments);
     
     await photo.save();
-    res.json(photo);
+    console.log('Photo saved with comments:', photo.comments);
+    
+    // Format the response for client-side compatibility
+    const formattedPhoto = {
+      ...photo.toObject(),
+      id: photo._id.toString(),
+      userId: photo.userId.toString(),
+      likes: photo.likes.map(likeId => likeId.toString()),
+      comments: photo.comments.map(comment => {
+        console.log('Formatting comment in response:', comment);
+        return {
+          userId: comment.userId.toString(),
+          username: comment.username,
+          text: comment.text,
+          createdAt: comment.createdAt
+        };
+      })
+    };
+    
+    console.log('Final formatted photo response:', formattedPhoto);
+    res.json(formattedPhoto);
   } catch (error) {
     console.error('Comment error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -325,6 +460,9 @@ app.post('/api/photos/:id/comment', authenticateToken, async (req, res) => {
 
 app.delete('/api/photos/:id', authenticateToken, async (req, res) => {
   try {
+    console.log('Delete photo request - req.user:', req.user);
+    console.log('Photo ID:', req.params.id);
+    
     const { id } = req.params;
     const photo = await Photo.findById(id);
     
@@ -332,6 +470,10 @@ app.delete('/api/photos/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
+    console.log('Photo found:', photo);
+    console.log('Photo userId:', photo.userId);
+    console.log('req.user.id:', req.user.id);
+
     if (photo.userId.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to delete this photo' });
     }
@@ -377,7 +519,22 @@ app.get('/api/users/:id/photos', async (req, res) => {
   try {
     const { id } = req.params;
     const photos = await Photo.find({ userId: id }).sort({ createdAt: -1 });
-    res.json(photos);
+    
+    // Format photos for client-side compatibility
+    const formattedPhotos = photos.map(photo => ({
+      ...photo.toObject(),
+      id: photo._id.toString(),
+      userId: photo.userId.toString(),
+      likes: photo.likes.map(likeId => likeId.toString()),
+      comments: photo.comments.map(comment => ({
+        userId: comment.userId.toString(),
+        username: comment.username,
+        text: comment.text,
+        createdAt: comment.createdAt
+      }))
+    }));
+    
+    res.json(formattedPhotos);
   } catch (error) {
     console.error('Get user photos error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -485,7 +642,22 @@ app.get('/api/search', async (req, res) => {
     if (!q) {
       // Default: return all photos and empty users list
       const photos = await Photo.find().sort({ createdAt: -1 });
-      return res.json({ photos, users: [] });
+      
+      // Format photos for client-side compatibility
+      const formattedPhotos = photos.map(photo => ({
+        ...photo.toObject(),
+        id: photo._id.toString(),
+        userId: photo.userId.toString(),
+        likes: photo.likes.map(likeId => likeId.toString()),
+        comments: photo.comments.map(comment => ({
+          userId: comment.userId.toString(),
+          username: comment.username,
+          text: comment.text,
+          createdAt: comment.createdAt
+        }))
+      }));
+      
+      return res.json({ photos: formattedPhotos, users: [] });
     }
     
     const searchTerm = q.toLowerCase();
@@ -508,6 +680,20 @@ app.get('/api/search', async (req, res) => {
       }).select('-password')
     ]);
     
+    // Format photos for client-side compatibility
+    const formattedPhotos = photos.map(photo => ({
+      ...photo.toObject(),
+      id: photo._id.toString(),
+      userId: photo.userId.toString(),
+      likes: photo.likes.map(likeId => likeId.toString()),
+      comments: photo.comments.map(comment => ({
+        userId: comment.userId.toString(),
+        username: comment.username,
+        text: comment.text,
+        createdAt: comment.createdAt
+      }))
+    }));
+    
     const formattedUsers = users.map(user => ({
       id: user._id.toString(),
       username: user.username,
@@ -518,7 +704,7 @@ app.get('/api/search', async (req, res) => {
       followers: user.followers
     }));
     
-    res.json({ photos, users: formattedUsers });
+    res.json({ photos: formattedPhotos, users: formattedUsers });
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ error: 'Internal server error' });

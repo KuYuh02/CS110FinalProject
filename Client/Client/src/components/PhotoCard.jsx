@@ -5,7 +5,9 @@ import { photosAPI } from "../services/api";
 
 function PhotoCard({ photo, onUpdated, onDeleted }) {
   const { user } = useAuth();
-  const isOwner = user && user.id === photo.userId;
+  
+  const isOwner = user && String(user.id) === String(photo.userId);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(photo.title);
   const [editDescription, setEditDescription] = useState(photo.description);
@@ -104,7 +106,7 @@ function PhotoCard({ photo, onUpdated, onDeleted }) {
         </div>
         {(photo.comments || []).map((c, idx) => (
           <div key={idx}>
-            <strong>{c.username}:</strong> {c.text}
+            <strong>{c.username || 'Anonymous'}:</strong> {c.text}
           </div>
         ))}
         <div style={{ marginTop: 8 }}>
