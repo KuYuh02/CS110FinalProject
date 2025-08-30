@@ -23,7 +23,7 @@ const Navbar = () => {
             <SearchBar />
           </div>
           
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-8">
             {user ? (
               <>
                 <Link to="/upload" className="button-primary button-secondary">
