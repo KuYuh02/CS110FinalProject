@@ -62,7 +62,7 @@ function Recommendations() {
   };
 
   const getSimilarityColor = (score) => {
-    if (score >= 10) return "#4CAF50"; // Green
+    if (score >= 10) return "#4CAF50"; // Green - will map to a minimalist green
     if (score >= 6) return "#8BC34A"; // Light green
     if (score >= 3) return "#FFC107"; // Yellow
     return "#FF9800"; // Orange
@@ -70,100 +70,77 @@ function Recommendations() {
 
   if (!user) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h2>Recommendations</h2>
-        <p>Please log in to see personalized recommendations.</p>
+      <div className="container mx-auto py-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Recommendations</h2>
+        <p className="text-gray-700">Please log in to see personalized recommendations.</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h2>Recommendations</h2>
-        <p>Loading recommendations...</p>
+      <div className="container mx-auto py-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Recommendations</h2>
+        <p className="text-gray-700">Loading recommendations...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h2>Recommendations</h2>
-        <p style={{ color: 'red' }}>Error: {error}</p>
-        <button onClick={loadRecommendations}>Try Again</button>
+      <div className="container mx-auto py-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Recommendations</h2>
+        <p className="text-red-600 mb-4">Error: {error}</p>
+        <button onClick={loadRecommendations} className="button-primary">
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>💡 Personalized Recommendations</h2>
+    <div className="container mx-auto py-8">
+      <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">💡 Personalized Recommendations</h2>
       
       {/* User Stats */}
-      <div style={{ 
-        background: '#f5f5f5', 
-        padding: '15px', 
-        borderRadius: '8px', 
-        marginBottom: '20px',
-        display: 'flex',
-        gap: '20px',
-        justifyContent: 'center'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2196F3' }}>
+      <div className="bg-white shadow-md rounded-lg p-6 mb-8 flex gap-8 justify-center border border-gray-200">
+        <div className="text-center">
+          <div className="text-4xl font-bold text-indigo-600 mb-1">
             {userStats.totalLikedPhotos || 0}
           </div>
-          <div style={{ fontSize: '14px', color: '#666' }}>Photos Liked</div>
+          <div className="text-sm text-gray-500">Photos Liked</div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4CAF50' }}>
+        <div className="text-center">
+          <div className="text-4xl font-bold text-indigo-600 mb-1">
             {userStats.totalFollowedUsers || 0}
           </div>
-          <div style={{ fontSize: '14px', color: '#666' }}>Users Followed</div>
+          <div className="text-sm text-gray-500">Users Followed</div>
         </div>
       </div>
 
       {recommendations.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <h3>No recommendations yet</h3>
-          <p>Start liking photos and following users to get personalized recommendations!</p>
+        <div className="text-center py-12 card">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No recommendations yet</h3>
+          <p className="text-gray-700">Start liking photos and following users to get personalized recommendations!</p>
         </div>
       ) : (
         <div>
-          <h3>Users You Might Like</h3>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Users You Might Like</h3>
+          <p className="text-gray-700 mb-6">
             Based on your likes, follows, and photo preferences
           </p>
           
-          <div style={{ display: 'grid', gap: '20px' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendations.map((rec) => (
-              <div key={rec.id} style={{
-                border: '1px solid #e0e0e0',
-                borderRadius: '12px',
-                padding: '20px',
-                background: 'white',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div key={rec.id} className="card">
+                <div className="flex items-center gap-4 mb-4">
                   {/* Profile Picture */}
-                  <div style={{
-                    width: '60px',
-                    height: '60px',
-                    borderRadius: '50%',
-                    background: rec.profilePicture || '#e0e0e0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '24px',
-                    color: '#666',
-                    overflow: 'hidden'
-                  }}>
+                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl text-gray-600 overflow-hidden flex-shrink-0">
                     {rec.profilePicture ? (
                       <img 
                         src={rec.profilePicture} 
                         alt={rec.username}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       rec.username.charAt(0).toUpperCase()
@@ -171,39 +148,29 @@ function Recommendations() {
                   </div>
 
                   {/* User Info */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
                       <Link 
                         to={`/profile/${rec.id}`}
-                        style={{ 
-                          textDecoration: 'none', 
-                          color: '#2196F3',
-                          fontSize: '18px',
-                          fontWeight: 'bold'
-                        }}
+                        className="text-lg font-semibold text-indigo-600 hover:underline truncate"
                       >
                         {rec.username}
                       </Link>
-                      <span style={{
-                        background: getSimilarityColor(rec.similarityScore),
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}>
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold text-white"
+                        style={{ backgroundColor: getSimilarityColor(rec.similarityScore) }}
+                      >
                         {getSimilarityDescription(rec.similarityScore, rec.commonLikedPhotos, rec.commonFollowedUsers, rec.similarTags)}
                       </span>
                     </div>
                     
                     {rec.bio && (
-                      <p style={{ color: '#666', margin: '0 0 8px 0', fontSize: '14px' }}>
+                      <p className="text-sm text-gray-500 mb-2 truncate">
                         {rec.bio}
                       </p>
                     )}
 
                     {/* Similarity Details */}
-                    <div style={{ display: 'flex', gap: '15px', fontSize: '12px', color: '#888' }}>
+                    <div className="flex gap-4 text-xs text-gray-500 flex-wrap">
                       <span>📸 {rec.photoCount} photos</span>
                       {rec.commonLikedPhotos > 0 && (
                         <span>❤️ {rec.commonLikedPhotos} common likes</span>
@@ -220,68 +187,39 @@ function Recommendations() {
                   {/* Follow Button */}
                   <button
                     onClick={() => handleFollow(rec.id)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '20px',
-                      border: 'none',
-                      background: followStatuses[rec.id] ? '#f44336' : '#2196F3',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = followStatuses[rec.id] ? '#d32f2f' : '#1976D2';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = followStatuses[rec.id] ? '#f44336' : '#2196F3';
-                    }}
+                    className={`button-primary ${followStatuses[rec.id] ? 'bg-red-500 hover:bg-red-600' : ''} button-sm flex-shrink-0`}
                   >
                     {followStatuses[rec.id] ? 'Unfollow' : 'Follow'}
                   </button>
                 </div>
 
                 {/* Similarity Score Bar */}
-                <div style={{ marginTop: '15px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '12px', color: '#666' }}>Similarity Score</span>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: getSimilarityColor(rec.similarityScore) }}>
+                <div className="mt-4">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs text-gray-500">Similarity Score</span>
+                    <span className="text-xs font-semibold" style={{ color: getSimilarityColor(rec.similarityScore) }}>
                       {rec.similarityScore}
                     </span>
                   </div>
-                  <div style={{
-                    width: '100%',
-                    height: '6px',
-                    background: '#e0e0e0',
-                    borderRadius: '3px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${Math.min((rec.similarityScore / 15) * 100, 100)}%`,
-                      height: '100%',
-                      background: getSimilarityColor(rec.similarityScore),
-                      transition: 'width 0.3s ease'
-                    }} />
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.min((rec.similarityScore / 15) * 100, 100)}%`,
+                        backgroundColor: getSimilarityColor(rec.similarityScore),
+                        transition: 'width 0.3s ease'
+                      }}
+                    />
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: '30px' }}>
+          <div className="text-center mt-12">
             <button 
               onClick={loadRecommendations}
-              style={{
-                padding: '12px 24px',
-                borderRadius: '25px',
-                border: 'none',
-                background: '#2196F3',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 'bold'
-              }}
+              className="button-primary px-6 py-3 rounded-full"
             >
               🔄 Refresh Recommendations
             </button>

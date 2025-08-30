@@ -34,54 +34,31 @@ function Home() {
   };
 
   return (
-    <div>
-      <h1>SnapShare</h1>
+    <div className="container mx-auto py-8">
+      <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">Welcome to SnapShare</h1>
       
       {/* Recommendations Preview Section */}
       {user && (
-        <div style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          margin: '20px 0',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>
+        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-8 rounded-lg shadow-lg mb-8 text-center">
+          <h2 className="text-3xl font-bold mb-3">
             💡 Discover New Connections
           </h2>
-          <p style={{ margin: '0 0 20px 0', opacity: 0.9 }}>
+          <p className="text-lg opacity-90 mb-6">
             Get personalized user recommendations based on your likes, follows, and photo preferences
           </p>
           <Link 
             to="/recommendations"
-            style={{
-              display: 'inline-block',
-              background: 'rgba(255,255,255,0.2)',
-              color: 'white',
-              padding: '12px 24px',
-              borderRadius: '25px',
-              textDecoration: 'none',
-              fontWeight: 'bold',
-              border: '2px solid rgba(255,255,255,0.3)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(255,255,255,0.3)';
-              e.target.style.borderColor = 'rgba(255,255,255,0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(255,255,255,0.2)';
-              e.target.style.borderColor = 'rgba(255,255,255,0.3)';
-            }}
+            className="inline-block bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-lg font-semibold py-3 px-8 rounded-full transition-all duration-300 ease-in-out border border-white border-opacity-30"
           >
             Explore Recommendations →
           </Link>
         </div>
       )}
       
-      <UploadForm onUpload={handleUpload} />
-      <div>
+      <div className="mb-8">
+        <UploadForm onUpload={handleUpload} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
         {photos.map((p) => (
           <PhotoCard key={p.id} photo={p} onUpdated={handleUpdated} onDeleted={handleDeleted} />
         ))}

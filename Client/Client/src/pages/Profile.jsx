@@ -241,15 +241,15 @@ const Profile = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
+    <div className="container mx-auto py-8">
+      <div className="card p-6 mb-6">
         <div className="flex flex-col md:flex-row items-center md:items-start">
-          <div className="w-32 h-32 bg-gray-200 rounded-full mb-4 md:mb-0 md:mr-6 flex items-center justify-center">
+          <div className="w-32 h-32 bg-gray-200 rounded-full mb-4 md:mb-0 md:mr-6 flex items-center justify-center overflow-hidden flex-shrink-0">
             {profileUser.profilePicture ? (
               <img 
                 src={profileUser.profilePicture} 
                 alt={profileUser.username}
-                className="w-32 h-32 rounded-full object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
               <span className="text-4xl text-gray-400">
@@ -258,39 +258,42 @@ const Profile = () => {
             )}
           </div>
           
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {editing ? (
               <div className="space-y-4">
                 {error && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                  <div className="alert-error">
                     {error}
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Username</label>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
                   <input
+                    id="username"
                     type="text"
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="input-field"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Bio</label>
+                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700">Bio</label>
                   <textarea
+                    id="bio"
                     value={formData.bio}
                     onChange={(e) => setFormData({...formData, bio: e.target.value})}
                     rows="3"
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="input-field"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
+                  <label htmlFor="profile-picture" className="block text-sm font-medium text-gray-700">Profile Picture</label>
                   <input
+                    id="profile-picture"
                     type="file"
                     accept="image/*"
                     onChange={handleProfilePicFileChange}
-                    className="mt-1 block w-full"
+                    className="mt-1 block w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                   />
                   {processingImage && (
                     <p className="text-sm text-gray-500 mt-1">Processing image…</p>
@@ -354,14 +357,14 @@ const Profile = () => {
                           step="0.01"
                           value={cropScale}
                           onChange={handleCropScaleChange}
-                          className="w-full"
+                          className="w-full accent-indigo-600"
                         />
                       </div>
                       <div className="mt-3 flex items-center space-x-2">
                         <button
                           type="button"
                           onClick={applyCrop}
-                          className="px-3 py-2 bg-indigo-600 text-white rounded-md"
+                          className="button-primary"
                         >
                           Apply Crop
                         </button>
@@ -372,7 +375,7 @@ const Profile = () => {
                             setCropScale(1);
                             setCropOffset({ x: 0, y: 0 });
                           }}
-                          className="px-3 py-2 bg-gray-200 text-gray-800 rounded-md"
+                          className="button-primary button-secondary"
                         >
                           Clear
                         </button>
@@ -380,38 +383,38 @@ const Profile = () => {
                     </div>
                   )}
                   {formData.profilePicture && !cropSrc && (
-                    <div className="mt-3 w-24 h-24 rounded-full overflow-hidden">
-                      <img src={formData.profilePicture} alt="Preview" className="w-24 h-24 object-cover" />
+                    <div className="mt-3 w-24 h-24 rounded-full overflow-hidden border border-gray-200">
+                      <img src={formData.profilePicture} alt="Preview" className="w-full h-full object-cover" />
                     </div>
                   )}
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex gap-2 mt-4">
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md"
+                    className="button-primary"
                   >
                     Save
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md"
+                    className="button-primary button-secondary"
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             ) : (
-              <div>
-                <h1 className="text-2xl font-bold">{profileUser.username}</h1>
-                <p className="text-gray-600 mt-2">{profileUser.bio || 'No bio yet.'}</p>
-                <p className="text-gray-500 mt-4">
-                  {photos.length} photos • {profileUser.followers?.length || 0} followers • {profileUser.following?.length || 0} following
+              <div className="pt-2">
+                <h1 className="text-3xl font-bold text-gray-900">{profileUser.username}</h1>
+                <p className="text-gray-700 mt-2">{profileUser.bio || 'No bio yet.'}</p>
+                <p className="text-gray-500 mt-4 text-sm">
+                  <span className="font-medium">{photos.length}</span> photos • <span className="font-medium">{profileUser.followers?.length || 0}</span> followers • <span className="font-medium">{profileUser.following?.length || 0}</span> following
                 </p>
                 
                 {isOwnProfile ? (
                   <button
                     onClick={() => setEditing(true)}
-                    className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md"
+                    className="button-primary mt-6"
                   >
                     Edit Profile
                   </button>
@@ -429,7 +432,7 @@ const Profile = () => {
                           console.error(e);
                         }
                       }}
-                      className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md"
+                      className="button-primary mt-6"
                     >
                       {(currentUser?.following || []).includes(id) ? 'Unfollow' : 'Follow'}
                     </button>
@@ -441,12 +444,12 @@ const Profile = () => {
         </div>
       </div>
       
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Photos</h2>
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Photos</h2>
         {photos.length === 0 ? (
           <p className="text-gray-500">No photos yet.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {photos.map(photo => (
               <PhotoCard
                 key={photo.id}

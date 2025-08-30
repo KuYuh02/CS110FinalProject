@@ -32,39 +32,39 @@ const SearchResults = () => {
   }, [query]);
 
   if (loading) {
-    return <div className="flex justify-center py-8">Searching...</div>;
+    return <div className="container mx-auto py-8 text-center text-gray-700">Searching...</div>;
   }
 
   if (error) {
-    return <div className="flex justify-center py-8 text-red-600">{error}</div>;
+    return <div className="container mx-auto py-8 text-center alert-error">Error: {error}</div>;
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">
-        Search Results for "{query}"
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">
+        Search Results for "<span className="text-indigo-600">{query}</span>"
       </h1>
       
       {users.length === 0 && photos.length === 0 ? (
-        <p className="text-gray-500">No results found.</p>
+        <p className="text-gray-700 text-center text-lg">No results found for your query. Try a different search term.</p>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-12">
           {users.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Users</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Users</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {users.map(u => (
-                  <Link key={u.id} to={`/profile/${u.id}`} className="bg-white shadow rounded p-4 flex items-center hover:shadow-md">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                  <Link key={u.id} to={`/profile/${u.id}`} className="card flex items-center p-4 gap-4 hover:shadow-md transition-shadow duration-200">
+                    <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {u.profilePicture ? (
-                        <img src={u.profilePicture} alt={u.username} className="w-12 h-12 rounded-full object-cover" />
+                        <img src={u.profilePicture} alt={u.username} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-lg text-gray-500">{(u.username || '?').charAt(0).toUpperCase()}</span>
+                        <span className="text-xl text-gray-500">{(u.username || '?').charAt(0).toUpperCase()}</span>
                       )}
                     </div>
-                    <div>
-                      <div className="font-medium">{u.username}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">{u.bio || 'No bio'}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-lg text-gray-900 truncate">{u.username}</div>
+                      <div className="text-sm text-gray-500 truncate">{u.bio || 'No bio provided.'}</div>
                     </div>
                   </Link>
                 ))}
@@ -74,7 +74,7 @@ const SearchResults = () => {
 
           {photos.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Photos</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Photos</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {photos.map(photo => (
                   <PhotoCard key={photo.id} photo={photo} />

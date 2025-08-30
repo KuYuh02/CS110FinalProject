@@ -14,7 +14,7 @@ function App() {
     // Only ONE Router at the top level
     <Router>
       <AuthProvider>
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-subtle-gradient">
           <Navbar />
           <main>
             <Routes>

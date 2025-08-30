@@ -10,44 +10,44 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between h-16">
+    <nav className="bg-white shadow-md py-2">
+      <div className="container">
+        <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 font-bold text-xl text-indigo-600">
+            <Link to="/" className="text-2xl font-bold text-gray-900">
               SnapShare
             </Link>
           </div>
           
-          <div className="flex items-center">
+          <div className="flex items-center flex-grow justify-center px-4">
             <SearchBar />
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             {user ? (
               <>
-                <Link to="/upload" className="text-gray-700 hover:text-indigo-600">
+                <Link to="/upload" className="button-primary button-secondary">
                   Upload
                 </Link>
-                <Link to="/recommendations" className="text-gray-700 hover:text-indigo-600">
+                <Link to="/recommendations" className="button-primary button-secondary">
                   💡 Recommendations
                 </Link>
-                <Link to={`/profile/${user.id}`} className="text-gray-700 hover:text-indigo-600">
+                <Link to={`/profile/${user.id}`} className="button-primary button-secondary">
                   Profile
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="text-gray-700 hover:text-indigo-600"
+                  className="button-primary button-danger"
                 >
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-gray-700 hover:text-indigo-600">
+                <Link to="/login" className="button-primary button-secondary">
                   Login
                 </Link>
-                <Link to="/signup" className="text-gray-700 hover:text-indigo-600">
+                <Link to="/signup" className="button-primary">
                   Signup
                 </Link>
               </>
